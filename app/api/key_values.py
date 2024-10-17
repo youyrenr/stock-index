@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
-from ..models import KeyValue, User, KeyValueUpdate, KeyValueDelete
+from ..models import KeyValue, User, KeyValueUpdate, KeyValueDelete, KeyListItem, KeyList
 from ..auth import get_current_user
 from ..database import key_values_collection
 
@@ -43,3 +43,23 @@ async def delete_key_value(key_delete: KeyValueDelete, current_user: User = Depe
 async def list_key_values(skip: int = Body(0), limit: int = Body(10), current_user: User = Depends(get_current_user)):
     key_values = key_values_collection.find().skip(skip).limit(limit)
     return [KeyValue(**kv) for kv in key_values]
+
+@router.post("/key-values/keys", response_model=list[KeyListItem])
+async def list_keys(key_list: KeyList = Body(...), current_user: User = Depends(get_current_user)):
+    # 使用聚合管道来只获取 key 字段
+    pipeline = [
+        {"$project": {"_id": 0, "key": 1}},  # 只选择 key 字段
+        {"$skip": key_list.skip},
+        {"$limit": key_list.limit}
+    ]
+
+    # 如果提供了 prefix，添加一个匹配阶段
+    if key_list.prefix:
+        pipeline.insert(0, {
+            "$match": {
+                "key": {"$regex": f"^{key_list.prefix}"}
+            }
+        })
+
+    keys = list(key_values_collection.aggregate(pipeline))
+    return [KeyListItem(**k) for k in keys]
