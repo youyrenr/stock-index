@@ -21,7 +21,7 @@ async def login_for_access_token(user_login: UserLogin):
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "user_type": user.type}
 
 @router.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 async def create_user(new_user: UserCreate, current_user: User = Depends(get_current_user)):

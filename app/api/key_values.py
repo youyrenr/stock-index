@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, Query
 from ..models import KeyValue, User, KeyValueUpdate, KeyValueDelete, KeyListItem, KeyList
 from ..auth import get_current_user
 from ..database import key_values_collection
@@ -15,7 +15,7 @@ async def create_key_value(key_value: KeyValue, current_user: User = Depends(get
     return KeyValue(**created_key_value)
 
 @router.get("/key-values", response_model=KeyValue)
-async def read_key_value(key: str = Body(..., embed=True), current_user: User = Depends(get_current_user)):
+async def read_key_value(key: str = Query(...), current_user: User = Depends(get_current_user)):
     key_value = key_values_collection.find_one({"key": key})
     if key_value is None:
         raise HTTPException(status_code=404, detail="Key not found")
