@@ -2,7 +2,8 @@ import axios from 'axios'
 import { useAuthStore } from '../store/auth'
 
 const api = axios.create({
-    baseURL: 'http://localhost:8000/'  // 假设你的后端API运行在这个地址
+    // baseURL: 'http://localhost:8000/'
+    baseURL: 'http://stock.api.bookagent.com.cn/'
 })
 
 api.interceptors.request.use(

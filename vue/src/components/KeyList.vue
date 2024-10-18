@@ -11,10 +11,10 @@
         <ul class="key-items">
             <li v-for="key in filteredKeys" :key="key">
                 <span @click="$emit('select-key', key)">{{ key }}</span>
-                <button class="delete-btn" @click="confirmDelete(key)">🗑️</button>
+                <button v-if="userType == 1" class="delete-btn" @click="confirmDelete(key)">🗑️</button>
             </li>
         </ul>
-        <div class="add-key-container">
+        <div class="add-key-container" v-if="userType == 1">
             <input v-model="newKey" placeholder="输入键名" class="add-input">
             <button @click="addNewKey" :disabled="!newKey.trim()" class="add-button">新增</button>
         </div>
@@ -59,7 +59,7 @@ export default {
         const addNewKey = async () => {
             if (newKey.value.trim()) {
                 try {
-                    await api.post('/key-values', { key: newKey.value, value: '' })
+                    await api.post('/key-values', { key: newKey.value, value: newKey.value })
                     keys.value.push(newKey.value)
                     emit('key-added', newKey.value)
                     newKey.value = ''
@@ -107,6 +107,11 @@ export default {
             deleteKey,
             cancelDelete,
             logout
+        }
+    },
+    data() {
+        return {
+            userType: localStorage.user_type
         }
     }
 }
