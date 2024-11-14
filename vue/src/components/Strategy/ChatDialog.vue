@@ -33,7 +33,7 @@
                                         <MdPreview :modelValue="message.text" previewTheme="github"
                                             class="md-preview" />
                                     </div>
-                                    <div class="message-actions" >
+                                    <div class="message-actions">
                                         <!-- v-if="message.sender === 'User'" -->
                                         <button class="action-btn edit" @click="startEdit(message)">
                                             编辑
@@ -50,12 +50,20 @@
                     <div class="input-area">
                         <textarea v-model="newMessage" class="message-input" placeholder="输入消息..."
                             @keydown.enter.ctrl="sendMessage" rows="4"></textarea>
-                        <button class="send-btn" @click="sendMessage" :disabled="!newMessage.trim() && loading">
-                            添加
-                        </button>
-                        <button class="send-btn" @click="sendLLM" :disabled="loading">
-                            调用
-                        </button>
+
+                        <div class="controls-area">
+                            <select v-model="selectedModel" class="model-select">
+                                <option value="gpt-4o-mini">gpt-4o-mini</option>
+                                <option value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+                            </select>
+
+                            <button class="send-btn" @click="sendMessage" :disabled="!newMessage.trim() && loading">
+                                添加
+                            </button>
+                            <button class="send-btn" @click="sendLLM" :disabled="loading">
+                                调用
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -89,6 +97,7 @@ export default {
         const editingText = ref('')
         const shouldRenderContent = ref(false)
         const loading = ref(false)
+        const selectedModel = ref('gpt-4o-mini')
 
 
         onMounted(async () => {
@@ -98,7 +107,9 @@ export default {
         })
 
         const loadMessages = async () => {
-            if (!props.strategy?.conversationId) return
+            if (!props.strategy?.conversationId) {
+                props.strategy.conversationId = 0
+            }
 
             try {
                 const response = await api.get(`/messages/${props.strategy.conversationId}`)
@@ -226,19 +237,19 @@ export default {
                 console.error('发送消息失败:', error)
             }
         }
-
         const sendLLM = async () => {
-            if (loading.value) return  // 如果正在加载中，直接返回
+            if (loading.value) return
 
             try {
-                loading.value = true  // 开始加载，设置状态
+                loading.value = true
 
                 if (!props.strategy.conversationId) {
-                    return;
+                    return
                 }
 
                 const messageData = await api.post('/messages/regenerate', {
                     conversation_id: props.strategy.conversationId,
+                    sender: selectedModel.value
                 })
 
                 messages.value.push(messageData.data)
@@ -246,8 +257,9 @@ export default {
                 scrollToBottom()
             } catch (error) {
                 console.error('发送消息失败:', error)
+                loadMessages()
             } finally {
-                loading.value = false  // 无论成功失败都要重置状态
+                loading.value = false
             }
         }
 
@@ -333,7 +345,8 @@ export default {
             deleteMessage,
             handleClose,
             shouldRenderContent,
-            loading
+            loading,
+            selectedModel
         }
     }
 }
@@ -588,6 +601,7 @@ $transition: all 0.3s ease;
     border-radius: $radius-md;
     resize: none;
     transition: $transition;
+    height: 160px; // 调整高度以适应右侧三个元素
     @include custom-scrollbar;
 
     &:focus {
@@ -601,8 +615,38 @@ $transition: all 0.3s ease;
     }
 }
 
+// 右侧控制区样式
+.controls-area {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 200px; // 设置固定宽度
+}
+
+.model-select {
+    height: 40px;
+    padding: 0 12px;
+    font-size: 0.95rem;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    background-color: white;
+    color: $text-primary;
+    cursor: pointer;
+    transition: $transition;
+    width: 100%; // 占满容器宽度
+
+    &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 2px rgba($primary-color, 0.1);
+    }
+
+    &:hover {
+        border-color: $primary-color;
+    }
+}
+
 .send-btn {
-    align-self: flex-end;
     height: 40px;
     padding: 0 24px;
     font-size: 0.95rem;
@@ -613,6 +657,7 @@ $transition: all 0.3s ease;
     border-radius: $radius-md;
     cursor: pointer;
     transition: $transition;
+    width: 100%; // 占满容器宽度
 
     &:hover:not(:disabled) {
         background: color.scale($primary-color, $lightness: -9%);

@@ -1,12 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Query
 from ..models.user_models import User
 from ..models.prompt_models import Prompt, PromptCreate, PromptUpdate, PromptDelete, PromptList, PromptListItem
-from ..models.gpt_message_models import ChatMessage, ChatRequest
 from ..auth import get_current_user
 from ..database import prompt_collection
 from datetime import datetime
-from ..services.chatgpt_service import ChatGPTService
-from typing import List, Dict, Any
 
 router = APIRouter()
 
@@ -79,22 +76,3 @@ async def list_prompt_keys(prompt_list: PromptList = Body(...), current_user: Us
 
     keys = list(prompt_collection.aggregate(pipeline))
     return [PromptListItem(**k) for k in keys]
-
-# 创建服务实例
-chatgpt_service = ChatGPTService()
-@router.post("/prompts/chat", response_model=Dict[str, Any])
-async def chat_completion(
-    request: ChatRequest,
-    current_user: User = Depends(get_current_user)
-):
-    try:
-        # 将请求模型转换为列表格式
-        messages = [msg.dict() for msg in request.messages]
-        # 调用ChatGPT服务
-        response = await chatgpt_service.create_completion(messages)
-        return response
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )

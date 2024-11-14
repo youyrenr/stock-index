@@ -14,7 +14,6 @@ class Strategy(BaseModel):
 class StrategyCreate(BaseModel):
     key: str
     value: str
-    conversationId: Optional[str] = None
 
 class StrategyUpdate(BaseModel):
     key: str

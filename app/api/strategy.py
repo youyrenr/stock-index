@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Query
 from ..models.user_models import User, UserBase
 from ..models.strategy_models import (
@@ -24,6 +26,7 @@ async def create_strategy(strategy: StrategyCreate, current_user: UserBase = Dep
         **strategy.dict(),
         status="0",  # 初始状态为未开始
         user=current_user.username,
+        conversationId=str(uuid.uuid4()),
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
     )

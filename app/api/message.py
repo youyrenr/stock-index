@@ -68,7 +68,7 @@ async def update_message(message_update: MessageUpdate, current_user: UserBase =
 @router.post("/messages/chat", response_model=Message)
 async def create_chat_message(
         request: MessageCreate,
-        current_user: User = Depends(get_current_user)
+        current_user: UserBase = Depends(get_current_user)
 ):
     # 创建用户消息
     user_message = await create_message(request, current_user)
@@ -77,12 +77,10 @@ async def create_chat_message(
     messages = []
 
     if user_message.conversationId:
-        # 获取已有对话的历史
         conversation_messages = message_collection.find({
             "conversationId": user_message.conversationId
         }).sort("created_at", 1)
     else:
-        # 新对话只包含当前消息
         conversation_messages = [user_message.dict()]
 
     for msg in conversation_messages:
@@ -90,24 +88,27 @@ async def create_chat_message(
         messages.append(ChatMessage(role=role, content=msg["text"]))
 
     try:
-        # 调用ChatGPT服务
+        # 调用ChatGPT服务，使用request中的model
         chat_request = ChatRequest(messages=messages)
-        response = await chatgpt_service.create_completion([msg.dict() for msg in chat_request.messages])
+        response = await chatgpt_service.create_completion(
+            [msg.dict() for msg in chat_request.messages],
+            model=request.sender  # 使用用户传入的sender作为模型参数
+        )
 
-        # 创建AI回复消息
+        # 创建AI回复消息，保存用户选择的模型
         ai_message = MessageCreate(
             conversationId=user_message.conversationId,
             parentMessageId=user_message.messageId,
             text=response["choices"][0]["message"]["content"],
-            sender="gpt-4o-mini",
+            sender=request.sender,  # 使用用户传入的sender
             isCreatedByUser=False,
-            model=response.get("model", "gpt-4o-mini")
+            model=request.sender  # 保存用户选择的模型
         )
         ai_response = await create_message(ai_message, current_user)
         return ai_response
 
     except Exception as e:
-        # 创建错误消息
+        # 错误处理保持不变
         error_message = MessageCreate(
             conversationId=user_message.conversationId,
             parentMessageId=user_message.messageId,
@@ -159,10 +160,11 @@ async def get_user_conversations(
 
 @router.post("/messages/regenerate", response_model=Message)
 async def regenerate_ai_message(
-    data: dict = Body(..., example={"conversation_id": "some-uuid"}),
-    current_user: User = Depends(get_current_user)
+        data: dict = Body(..., example={"conversation_id": "some-uuid"}),
+        current_user: UserBase = Depends(get_current_user)
 ):
     conversation_id = data.get("conversation_id")
+    model = data.get("sender", "gpt-4o-mini")  # 获取model参数，默认为gpt-4o-mini
     if not conversation_id:
         raise HTTPException(
             status_code=400,
@@ -192,17 +194,17 @@ async def regenerate_ai_message(
     try:
         chat_request = ChatRequest(messages=messages)
         response = await chatgpt_service.create_completion(
-            [msg.dict() for msg in chat_request.messages]
+            [msg.dict() for msg in chat_request.messages],
+            model=model  # 使用指定的模型
         )
 
         new_ai_message = MessageCreate(
             conversationId=conversation_id,
             parentMessageId=last_user_message["messageId"] if last_user_message else None,
             text=response["choices"][0]["message"]["content"],
-            sender="gpt-4o-mini",
+            sender=model,  # 使用指定的模型作为sender
             isCreatedByUser=False,
-            model=response.get("model", "gpt-4o-mini"),
-            regenerated=True  # 标记为重新生成的消息
+            model=model,  # 保存模型信息
         )
 
         return await create_message(new_ai_message, current_user)
