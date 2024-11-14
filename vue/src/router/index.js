@@ -1,7 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../store/auth'
-import LoginView from '../views/LoginView.vue'
+import LoginView from '../LoginView.vue'
 import KeyValueView from '../views/KeyValueView.vue'
+import PromptView from '../views/PromptView.vue'
+import StrategyView from '../views/StrategyView.vue'
+import HomeView from '../views/HomeView.vue'
+import OtherView from '../views/OtherView.vue'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -12,14 +16,36 @@ const router = createRouter({
             component: LoginView
         },
         {
-            path: '/key-value',
-            name: 'keyValue',
-            component: KeyValueView,
-            meta: { requiresAuth: true }
-        },
-        {
             path: '/',
-            redirect: '/key-value'
+            component: () => import('../MainLayout.vue'),
+            meta: { requiresAuth: true },
+            children: [
+                {
+                    path: '',
+                    name: 'home',
+                    component: HomeView
+                },
+                {
+                    path: 'key-value',
+                    name: 'keyValue',
+                    component: KeyValueView
+                },
+                {
+                    path: 'prompt',
+                    name: 'Prompt',
+                    component: PromptView
+                },
+                {
+                    path: 'strategy',
+                    name: 'Strategy',
+                    component: StrategyView
+                },
+                {
+                    path: 'other',
+                    name: 'other',
+                    component: OtherView
+                }
+            ]
         }
     ]
 })

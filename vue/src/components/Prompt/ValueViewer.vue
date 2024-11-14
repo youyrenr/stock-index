@@ -12,7 +12,7 @@
 import { ref, watch } from 'vue'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
-import api from '../services/api'
+import api from '../../services/api'
 
 export default {
     name: 'ValueViewer',
@@ -30,6 +30,7 @@ export default {
         }
     },
     setup(props, { emit }) {
+        console.log(props)
         const markdown = ref(props.value)
 
         // 监听 value 变化
@@ -43,7 +44,7 @@ export default {
                 if(text == "") {
                     text = props.currentKey
                 }
-                await api.put('/key-values', {
+                await api.put('/prompts', {
                     key: props.currentKey,
                     value: text
                 })

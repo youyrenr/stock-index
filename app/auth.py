@@ -3,12 +3,12 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from .models import User, TokenData
+from .models.user_models import User, TokenData
 from .database import users_collection
 
 SECRET_KEY = "K6hYoyuDJ0x0N2C3x2n3nGFwWOextnItid4rJxBbz1CDl2iqgxuQfeDcTkbGmwHe"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 300
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

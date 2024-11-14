@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordBearer
 from datetime import timedelta
 from ..auth import authenticate_user, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES, get_password_hash
-from ..models import Token, User, UserCreate, UserOut, UserLogin, UserList
+from ..models.user_models import Token, User, UserCreate, UserOut, UserLogin, UserList
 from ..database import users_collection
 
 router = APIRouter()

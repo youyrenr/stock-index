@@ -1,6 +1,6 @@
 <template>
     <div class="key-value-manager">
-        <div class="key-list" :class="{ 'collapsed': isCollapsed }">
+        <div class="key-list" :class="{ 'is-collapsed': isCollapsed }">
             <button @click="toggleCollapse" class="collapse-btn">
                 {{ isCollapsed ? '❯' : '❮' }}
             </button>
@@ -8,9 +8,8 @@
                 v-show="!isCollapsed" />
         </div>
         <div class="value-viewer" v-if="selectedValue">
-            <ValueViewer v-if="userType == 1" :value="selectedValue" :currentKey="selectedKey"
-                @content-saved="handleContentSaved" />
-            <ValueViewerView v-else :value="selectedValue" />
+            <component :is="userType == 1 ? 'ValueViewer' : 'ValueViewerView'" :value="selectedValue"
+                :currentKey="selectedKey" @content-saved="handleContentSaved" />
         </div>
     </div>
 </template>
@@ -20,7 +19,7 @@ import { ref } from 'vue'
 import KeyList from './KeyList.vue'
 import ValueViewerView from './ValueViewerView.vue'
 import ValueViewer from './ValueViewer.vue'
-import api from '../services/api'
+import api from '../../services/api'
 
 export default {
     components: { KeyList, ValueViewerView, ValueViewer },
@@ -48,7 +47,6 @@ export default {
 
         const handleContentSaved = (newContent) => {
             selectedValue.value = newContent
-            // 可以在这里添加一些用户反馈，比如显示一个"保存成功"的提示
         }
 
         const handleKeyAdded = (newKey) => {
@@ -62,6 +60,11 @@ export default {
             }
         }
 
+        const logout = () => {
+            localStorage.clear()
+            window.location.reload()
+        }
+
         return {
             selectedValue,
             selectedKey,
@@ -70,7 +73,8 @@ export default {
             toggleCollapse,
             handleContentSaved,
             handleKeyAdded,
-            handleKeyDeleted
+            handleKeyDeleted,
+            logout
         }
     },
     data() {
@@ -81,12 +85,21 @@ export default {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+$primary-color: #3498db;
+$secondary-color: #2980b9;
+$danger-color: #e74c3c;
+$danger-hover-color: #c0392b;
+$background-color: #f0f4f8;
+$text-color: #2c3e50;
+$border-color: rgba(0, 0, 0, 0.05);
+$box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+
 .key-value-manager {
     display: flex;
     height: 100vh;
-    background-color: #f0f4f8;
-    color: #2c3e50;
+    background-color: $background-color;
+    color: $text-color;
     font-family: 'Roboto', sans-serif;
 }
 
@@ -94,14 +107,14 @@ export default {
     flex: 0 0 30%;
     max-width: 300px;
     transition: all 0.3s ease;
-    background-color: #ffffff;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+    background-color: #fff;
+    box-shadow: 10px 0 20px rgba(0, 0, 0, 0.05);
     position: relative;
     border-radius: 0 10px 10px 0;
-}
 
-.key-list.collapsed {
-    flex: 0 0 60px;
+    &.is-collapsed {
+        flex: 0 0 0;
+    }
 }
 
 .collapse-btn {
@@ -109,8 +122,8 @@ export default {
     right: -20px;
     top: 50%;
     transform: translateY(-50%);
-    background-color: #3498db;
-    color: white;
+    background-color: $primary-color;
+    color: #fff;
     border: none;
     border-radius: 50%;
     width: 40px;
@@ -123,20 +136,20 @@ export default {
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
 
-.collapse-btn:hover {
-    background-color: #2980b9;
+    &:hover {
+        background-color: $secondary-color;
+    }
 }
 
 .value-viewer {
     flex: 1;
     padding: 30px;
-    overflow-y: auto;
-    background-color: #ffffff;
+    overflow: hidden;
+    background-color: #fff;
     border-radius: 10px;
     margin: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    box-shadow: $box-shadow;
 }
 
 @media (max-width: 768px) {
@@ -149,10 +162,10 @@ export default {
         max-width: 100%;
         height: auto;
         border-radius: 0 0 10px 10px;
-    }
 
-    .key-list.collapsed {
-        height: 60px;
+        &.is-collapsed {
+            height: 60px;
+        }
     }
 
     .value-viewer {
@@ -165,9 +178,5 @@ export default {
         right: 50%;
         transform: translate(50%, -50%) rotate(90deg);
     }
-}
-
-.value-viewer {
-    overflow: hidden;
 }
 </style>

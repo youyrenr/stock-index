@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Query
-from ..models import KeyValue, KeyValueCreate, User, KeyValueUpdate, KeyValueDelete, KeyListItem, KeyList
+from ..models.user_models import User
+from ..models.key_value_models import KeyValue, KeyValueCreate, KeyValueUpdate, KeyValueDelete, KeyListItem, KeyList
 from ..auth import get_current_user
 from ..database import key_values_collection
 
@@ -44,6 +45,7 @@ async def delete_key_value(key_delete: KeyValueDelete, current_user: User = Depe
         raise HTTPException(status_code=404, detail="Key not found")
     return {"detail": "Key-value pair deleted successfully"}
 
+
 @router.post("/key-values/list", response_model=list[KeyValue])
 async def list_key_values(key_list: KeyList = Body(...), current_user: User = Depends(get_current_user)):
     query = {}
@@ -56,6 +58,7 @@ async def list_key_values(key_list: KeyList = Body(...), current_user: User = De
 
     key_values = key_values_collection.find(query).skip(key_list.skip).limit(key_list.limit)
     return [KeyValue(**kv) for kv in key_values]
+
 
 @router.post("/key-values/keys", response_model=list[KeyListItem])
 async def list_keys(key_list: KeyList = Body(...), current_user: User = Depends(get_current_user)):
@@ -78,3 +81,39 @@ async def list_keys(key_list: KeyList = Body(...), current_user: User = Depends(
 
     keys = list(key_values_collection.aggregate(pipeline))
     return [KeyListItem(**k) for k in keys]
+
+
+@router.get("/key-values/concatenated-values")
+async def get_concatenated_values(key: str = Query(...), separator: str = Query("\n"),
+                                  current_user: User = Depends(get_current_user)):
+    child_values = key_values_collection.find({"parentKey": key})
+
+    if not child_values:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No child values found for key: {key}"
+        )
+
+    if separator == "\\n":
+        separator = "\n"
+
+    # 获取所有子对象的value并拼接
+    values = []
+    for child in child_values:
+        if "value" in child and child["value"]:  # 确保value存在且不为空
+            values.append(str(child["value"]))
+
+    if not values:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No valid values found for children of key: {key}"
+        )
+
+    # 使用指定的分隔符拼接所有value
+    concatenated_text = separator.join(values)
+
+    return {
+        "key": key,
+        "value": concatenated_text,
+        "child_count": len(values)
+    }

@@ -1,15 +1,15 @@
 <template>
     <div class="key-value-view">
-        <KeyValueManager />
+        <PromptManager />
     </div>
 </template>
 
 <script>
-import KeyValueManager from '../components/keyValue/KeyValueManager.vue'
+import PromptManager from '../components/Prompt/PromptManager.vue'
 
 export default {
     components: {
-        KeyValueManager
+        PromptManager
     }
 }
 </script>
